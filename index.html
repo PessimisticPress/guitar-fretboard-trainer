@@ -147,7 +147,6 @@
       <button id="revealBtn" type="button">Reveal</button>
       <button id="nextBtn" class="primary" type="button" disabled>Next</button>
     </div>
-    <button id="resetMetricsBtn" type="button" class="secondary">Reset metrics</button>
   </div>
 
   <div class="panel">
@@ -288,7 +287,7 @@
       feedback.textContent=`Not quite. ${answerText}${chosenText ? " (you chose "+chosenText+")" : ""}`;
       feedback.classList.add("bad");
     }
-    save(); updateStats();
+    save(); updateStats(); draw();
     [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=true);
     revealBtn.disabled=true; nextBtn.disabled=false;
   }
@@ -369,12 +368,11 @@
       t.setAttribute("fill","var(--muted)");
       labels.appendChild(t);
     }
-    if(current){
+    if(current && (mode !== "find" || locked)){
       const x=current.f===0?left+fretW*.48:left+(current.f+.5)*fretW;
       const y=top+(5-current.s)*gap,c=document.createElementNS(svgNS,"circle");
       c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",13);
       c.setAttribute("fill","var(--accent)");c.setAttribute("stroke","var(--panel)");c.setAttribute("stroke-width",3);
-      if(mode==="find") c.setAttribute("opacity",".12");
       marker.appendChild(c);
     }
   }
@@ -403,12 +401,6 @@
   nextBtn.addEventListener("click",newQuestion);
   revealBtn.addEventListener("click",reveal);
   $("weakBtn").addEventListener("click",showWeak);
-  $("resetMetricsBtn").addEventListener("click",()=>{
-    if(confirm("Reset accuracy, streak, answered count, and weak spots?")){
-      data={stats:{answered:0,correct:0,streak:0},misses:{}};
-      save();updateStats();$("weakPanel").classList.add("hidden");newQuestion();
-    }
-  });
   $("resetBtn").addEventListener("click",()=>{
     if(confirm("Reset all saved scores and weak spots?")){
       data={stats:{answered:0,correct:0,streak:0},misses:{}};
