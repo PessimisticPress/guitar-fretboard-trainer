@@ -73,6 +73,7 @@
     .weakrow{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0}
     .weakrow:last-child{border-bottom:0}
     @media (max-width:390px){
+      #stringChecks{grid-template-columns:repeat(2,1fr)!important}
       .choices{grid-template-columns:repeat(3,1fr)}
       .prompt{font-size:22px}
       button{font-size:15px}
@@ -99,17 +100,17 @@
 
   <div class="panel">
     <div class="settings">
-      <label class="full">Strings
-        <select id="stringSelect">
-          <option value="all">All 6 strings</option>
-          <option value="0">6th string — Low E</option>
-          <option value="1">5th string — A</option>
-          <option value="2">4th string — D</option>
-          <option value="3">3rd string — G</option>
-          <option value="4">2nd string — B</option>
-          <option value="5">1st string — High E</option>
-        </select>
-      </label>
+      <div class="full">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Strings — select one or more</div>
+        <div id="stringChecks" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="0" type="checkbox" checked><span>6th — Low E</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="1" type="checkbox"><span>5th — A</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="2" type="checkbox"><span>4th — D</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="3" type="checkbox"><span>3rd — G</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="4" type="checkbox"><span>2nd — B</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="5" type="checkbox"><span>1st — High E</span></label>
+        </div>
+      </div>
       <label>Lowest fret<select id="minFret"></select></label>
       <label>Highest fret<select id="maxFret"></select></label>
       <label class="full switchline">
@@ -146,6 +147,7 @@
       <button id="revealBtn" type="button">Reveal</button>
       <button id="nextBtn" class="primary" type="button" disabled>Next</button>
     </div>
+    <button id="resetMetricsBtn" type="button" class="secondary">Reset metrics</button>
   </div>
 
   <div class="panel">
@@ -171,7 +173,7 @@
   let data = load();
 
   const $ = id => document.getElementById(id);
-  const minFret=$("minFret"), maxFret=$("maxFret"), stringSelect=$("stringSelect"),
+  const minFret=$("minFret"), maxFret=$("maxFret"),
         naturalOnly=$("naturalOnly"), adaptive=$("adaptive"), feedback=$("feedback"),
         nextBtn=$("nextBtn"), revealBtn=$("revealBtn"), noteChoices=$("noteChoices"),
         findChoices=$("findChoices");
@@ -205,7 +207,12 @@
   function allowedPositions(){
     let lo=+minFret.value, hi=+maxFret.value;
     if(lo>hi){ const t=lo;lo=hi;hi=t; }
-    const strings=stringSelect.value==="all" ? [0,1,2,3,4,5] : [+stringSelect.value];
+    let strings=[...document.querySelectorAll(".stringCheck:checked")].map(x=>+x.dataset.string);
+    if(!strings.length){
+      const first=document.querySelector(".stringCheck");
+      first.checked=true;
+      strings=[0];
+    }
     const arr=[];
     for(const s of strings){
       for(let f=lo;f<=hi;f++){
@@ -334,7 +341,7 @@
       line.setAttribute("stroke","var(--border)");line.setAttribute("stroke-width",f===1?4:1.4);frets.appendChild(line);
     }
     for(let s=0;s<6;s++){
-      const y=top+s*gap,line=document.createElementNS(svgNS,"line");
+      const y=top+(5-s)*gap,line=document.createElementNS(svgNS,"line");
       line.setAttribute("x1",left);line.setAttribute("x2",left+width);line.setAttribute("y1",y);line.setAttribute("y2",y);
       line.setAttribute("stroke","var(--text)");line.setAttribute("stroke-width",1+(5-s)*.35);strings.appendChild(line);
     }
@@ -351,9 +358,20 @@
       t.setAttribute("text-anchor","middle");t.setAttribute("font-size","12");t.setAttribute("fill","var(--muted)");
       labels.appendChild(t);
     }
+    const shortStringLabels=["6th E","5th A","4th D","3rd G","2nd B","1st E"];
+    for(let s=0;s<6;s++){
+      const t=document.createElementNS(svgNS,"text");
+      t.textContent=shortStringLabels[s];
+      t.setAttribute("x","38");
+      t.setAttribute("y",top+(5-s)*gap+4);
+      t.setAttribute("text-anchor","end");
+      t.setAttribute("font-size","11");
+      t.setAttribute("fill","var(--muted)");
+      labels.appendChild(t);
+    }
     if(current){
       const x=current.f===0?left+fretW*.48:left+(current.f+.5)*fretW;
-      const y=top+current.s*gap,c=document.createElementNS(svgNS,"circle");
+      const y=top+(5-current.s)*gap,c=document.createElementNS(svgNS,"circle");
       c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",13);
       c.setAttribute("fill","var(--accent)");c.setAttribute("stroke","var(--panel)");c.setAttribute("stroke-width",3);
       if(mode==="find") c.setAttribute("opacity",".12");
@@ -377,10 +395,20 @@
     document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
     newQuestion();
   }));
-  [stringSelect,minFret,maxFret,naturalOnly,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  [minFret,maxFret,naturalOnly,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  document.querySelectorAll(".stringCheck").forEach(el=>el.addEventListener("change",()=>{
+    if(!document.querySelector(".stringCheck:checked")) el.checked=true;
+    newQuestion();
+  }));
   nextBtn.addEventListener("click",newQuestion);
   revealBtn.addEventListener("click",reveal);
   $("weakBtn").addEventListener("click",showWeak);
+  $("resetMetricsBtn").addEventListener("click",()=>{
+    if(confirm("Reset accuracy, streak, answered count, and weak spots?")){
+      data={stats:{answered:0,correct:0,streak:0},misses:{}};
+      save();updateStats();$("weakPanel").classList.add("hidden");newQuestion();
+    }
+  });
   $("resetBtn").addEventListener("click",()=>{
     if(confirm("Reset all saved scores and weak spots?")){
       data={stats:{answered:0,correct:0,streak:0},misses:{}};
