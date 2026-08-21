@@ -3,12 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#111111">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Fret Trainer">
-  <link rel="apple-touch-icon" sizes="180x180" href="guitar-fretboard-trainer-icon-180.png">
-<title>Guitar Fretboard Trainer</title>
+  <meta name="theme-color" content="#111111">
+  <title>Guitar Fretboard Trainer</title>
   <style>
     :root{
       --bg:#f5f5f7; --panel:#ffffff; --text:#111114; --muted:#6b6b73;
@@ -54,6 +53,7 @@
     .fretwrap{overflow:hidden;margin:4px 0 12px}
     svg{display:block;width:100%;height:auto}
     .choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .note-placeholder{visibility:hidden;pointer-events:none}
     button{
       appearance:none;border:1px solid var(--border);background:var(--panel);color:var(--text);
       border-radius:12px;padding:12px 6px;font-size:16px;font-weight:650;min-height:48px;
@@ -105,17 +105,17 @@
         <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Strings — select one or more</div>
         <div id="stringChecks" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="0" type="checkbox" checked><span>6th — Low E</span></label>
-          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="1" type="checkbox"><span>5th — A</span></label>
-          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="2" type="checkbox"><span>4th — D</span></label>
-          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="3" type="checkbox"><span>3rd — G</span></label>
-          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="4" type="checkbox"><span>2nd — B</span></label>
-          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="5" type="checkbox"><span>1st — High E</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="1" type="checkbox" checked><span>5th — A</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="2" type="checkbox" checked><span>4th — D</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="3" type="checkbox" checked><span>3rd — G</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="4" type="checkbox" checked><span>2nd — B</span></label>
+          <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="5" type="checkbox" checked><span>1st — High E</span></label>
         </div>
       </div>
       <label>Lowest fret<select id="minFret"></select></label>
       <label>Highest fret<select id="maxFret"></select></label>
       <label class="full switchline">
-        <span>Natural notes only</span><input id="naturalOnly" type="checkbox">
+        <span>Natural notes only</span><input id="naturalOnly" type="checkbox" checked>
       </label>
       <label class="full switchline">
         <span>Repeat missed positions more often</span><input id="adaptive" type="checkbox" checked>
@@ -190,6 +190,16 @@
     noteChoices.appendChild(b);
   });
 
+  function updateNoteChoiceVisibility(){
+    [...noteChoices.children].forEach((b,i)=>{
+      const hide=naturalOnly.checked && !NATURAL.has(i);
+      b.classList.toggle("note-placeholder",hide);
+      b.disabled=hide || locked;
+      b.setAttribute("aria-hidden",hide ? "true" : "false");
+      b.tabIndex=hide ? -1 : 0;
+    });
+  }
+
   function load(){
     try{
       const x=JSON.parse(localStorage.getItem(STORAGE));
@@ -241,6 +251,7 @@
     locked=false; feedback.textContent=""; feedback.className="feedback";
     nextBtn.disabled=true; revealBtn.disabled=false;
     [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=false);
+    updateNoteChoiceVisibility();
 
     if(mode==="position"){
       current=pickPosition();
@@ -394,7 +405,11 @@
     document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
     newQuestion();
   }));
-  [minFret,maxFret,naturalOnly,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  [minFret,maxFret,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  naturalOnly.addEventListener("change",()=>{
+    updateNoteChoiceVisibility();
+    newQuestion();
+  });
   document.querySelectorAll(".stringCheck").forEach(el=>el.addEventListener("change",()=>{
     if(!document.querySelector(".stringCheck:checked")) el.checked=true;
     newQuestion();
@@ -409,7 +424,7 @@
     }
   });
 
-  updateStats(); newQuestion();
+  updateStats(); updateNoteChoiceVisibility(); newQuestion();
 })();
 </script>
 </body>
