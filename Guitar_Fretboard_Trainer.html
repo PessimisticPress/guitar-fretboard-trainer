@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Fret Trainer">
+  <meta name="theme-color" content="#111111">
+  <title>Guitar Fretboard Trainer</title>
+  <style>
+    :root{
+      --bg:#f5f5f7; --panel:#ffffff; --text:#111114; --muted:#6b6b73;
+      --border:#d8d8de; --accent:#111114; --good:#167a43; --bad:#b3261e;
+      --soft:#ececf1;
+    }
+    @media (prefers-color-scheme:dark){
+      :root{
+        --bg:#111113; --panel:#1c1c1f; --text:#f4f4f6; --muted:#a9a9b1;
+        --border:#39393f; --accent:#f4f4f6; --soft:#28282e;
+      }
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+      -webkit-font-smoothing:antialiased;
+      padding: max(16px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
+    }
+    .app{max-width:720px;margin:0 auto}
+    h1{font-size:25px;line-height:1.15;margin:4px 0 6px}
+    .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .stat,.panel{
+      background:var(--panel); border:1px solid var(--border); border-radius:15px;
+    }
+    .stat{padding:10px;text-align:center}
+    .stat .n{font-size:22px;font-weight:700}
+    .stat .l{font-size:11px;color:var(--muted);margin-top:2px}
+    .panel{padding:13px;margin-bottom:12px}
+    .settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:12px;color:var(--muted);display:block}
+    select{
+      width:100%; margin-top:5px; border:1px solid var(--border); background:var(--panel);
+      color:var(--text); border-radius:10px; font-size:16px; padding:9px 8px;
+    }
+    .full{grid-column:1/-1}
+    .switchline{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--text);font-size:14px}
+    input[type=checkbox]{width:22px;height:22px}
+    .question{text-align:center;padding:4px 0 8px}
+    .eyebrow{color:var(--muted);font-size:13px}
+    .prompt{font-size:24px;font-weight:750;margin-top:3px}
+    .fretwrap{overflow:hidden;margin:4px 0 12px}
+    svg{display:block;width:100%;height:auto}
+    .choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    button{
+      appearance:none;border:1px solid var(--border);background:var(--panel);color:var(--text);
+      border-radius:12px;padding:12px 6px;font-size:16px;font-weight:650;min-height:48px;
+    }
+    button:active{transform:scale(.985)}
+    button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+    button:disabled{opacity:.45}
+    .feedback{min-height:52px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;padding:8px 4px}
+    .feedback.good{color:var(--good)}
+    .feedback.bad{color:var(--bad)}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .secondary{margin-top:8px;width:100%}
+    .tiny{font-size:12px;color:var(--muted);line-height:1.45;margin-top:10px}
+    .modebar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .modebtn.active{background:var(--soft);border-color:var(--text)}
+    .hidden{display:none!important}
+    .weaklist{font-size:14px;line-height:1.5}
+    .weakrow{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0}
+    .weakrow:last-child{border-bottom:0}
+    @media (max-width:390px){
+      .choices{grid-template-columns:repeat(3,1fr)}
+      .prompt{font-size:22px}
+      button{font-size:15px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <h1>Guitar Fretboard Trainer</h1>
+  <p class="sub">Learn note locations until they become automatic.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="accuracy">—</div><div class="l">Accuracy</div></div>
+    <div class="stat"><div class="n" id="streak">0</div><div class="l">Streak</div></div>
+    <div class="stat"><div class="n" id="answered">0</div><div class="l">Answered</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="modebar">
+      <button type="button" class="modebtn active" data-mode="position">Name the note</button>
+      <button type="button" class="modebtn" data-mode="find">Find the note</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="settings">
+      <label class="full">Strings
+        <select id="stringSelect">
+          <option value="all">All 6 strings</option>
+          <option value="0">6th string — Low E</option>
+          <option value="1">5th string — A</option>
+          <option value="2">4th string — D</option>
+          <option value="3">3rd string — G</option>
+          <option value="4">2nd string — B</option>
+          <option value="5">1st string — High E</option>
+        </select>
+      </label>
+      <label>Lowest fret<select id="minFret"></select></label>
+      <label>Highest fret<select id="maxFret"></select></label>
+      <label class="full switchline">
+        <span>Natural notes only</span><input id="naturalOnly" type="checkbox">
+      </label>
+      <label class="full switchline">
+        <span>Repeat missed positions more often</span><input id="adaptive" type="checkbox" checked>
+      </label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="question">
+      <div class="eyebrow" id="eyebrow">What note is this?</div>
+      <div class="prompt" id="prompt"></div>
+    </div>
+
+    <div class="fretwrap">
+      <svg id="board" viewBox="0 0 720 255" role="img" aria-label="Guitar fretboard">
+        <rect x="44" y="25" width="650" height="190" rx="10" fill="var(--panel)" stroke="var(--border)"/>
+        <g id="fretLines"></g>
+        <g id="stringLines"></g>
+        <g id="inlays"></g>
+        <g id="marker"></g>
+        <g id="labels"></g>
+      </svg>
+    </div>
+
+    <div id="noteChoices" class="choices"></div>
+    <div id="findChoices" class="choices hidden"></div>
+
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+    <div class="actions">
+      <button id="revealBtn" type="button">Reveal</button>
+      <button id="nextBtn" class="primary" type="button" disabled>Next</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <button id="weakBtn" type="button" class="secondary">Show weak spots</button>
+    <div id="weakPanel" class="weaklist hidden"></div>
+    <button id="resetBtn" type="button" class="secondary">Reset all stats</button>
+    <div class="tiny">Tip: start with one string and frets 0–5. When answers feel immediate rather than calculated, expand the range. Your stats are saved on this device.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NOTES = ["C","C♯/D♭","D","D♯/E♭","E","F","F♯/G♭","G","G♯/A♭","A","A♯/B♭","B"];
+  const SHORT = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  const NATURAL = new Set([0,2,4,5,7,9,11]);
+  const OPEN = [4,9,2,7,11,4];
+  const STRINGS = ["6th string (low E)","5th string (A)","4th string (D)","3rd string (G)","2nd string (B)","1st string (high E)"];
+  const STORAGE = "guitar-fretboard-trainer-v1";
+
+  let mode = "position";
+  let current = null;
+  let locked = false;
+  let data = load();
+
+  const $ = id => document.getElementById(id);
+  const minFret=$("minFret"), maxFret=$("maxFret"), stringSelect=$("stringSelect"),
+        naturalOnly=$("naturalOnly"), adaptive=$("adaptive"), feedback=$("feedback"),
+        nextBtn=$("nextBtn"), revealBtn=$("revealBtn"), noteChoices=$("noteChoices"),
+        findChoices=$("findChoices");
+
+  for(let i=0;i<=12;i++){
+    minFret.add(new Option(i,i)); maxFret.add(new Option(i,i));
+  }
+  minFret.value="0"; maxFret.value="5";
+
+  NOTES.forEach((n,i)=>{
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=n; b.dataset.note=i;
+    b.addEventListener("click",()=>answerNote(i));
+    noteChoices.appendChild(b);
+  });
+
+  function load(){
+    try{
+      const x=JSON.parse(localStorage.getItem(STORAGE));
+      if(x && x.stats && x.misses) return x;
+    }catch(e){}
+    return {stats:{answered:0,correct:0,streak:0}, misses:{}};
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE,JSON.stringify(data)); }catch(e){}
+  }
+  function posKey(s,f){ return s+"-"+f; }
+
+  function noteAt(s,f){ return (OPEN[s]+f)%12; }
+
+  function allowedPositions(){
+    let lo=+minFret.value, hi=+maxFret.value;
+    if(lo>hi){ const t=lo;lo=hi;hi=t; }
+    const strings=stringSelect.value==="all" ? [0,1,2,3,4,5] : [+stringSelect.value];
+    const arr=[];
+    for(const s of strings){
+      for(let f=lo;f<=hi;f++){
+        const n=noteAt(s,f);
+        if(naturalOnly.checked && !NATURAL.has(n)) continue;
+        let weight=1;
+        if(adaptive.checked) weight += Math.min(data.misses[posKey(s,f)]||0,5);
+        for(let w=0;w<weight;w++) arr.push({s,f,n,key:posKey(s,f)});
+      }
+    }
+    return arr;
+  }
+
+  function pickPosition(){
+    const pool=allowedPositions();
+    if(!pool.length) return null;
+    let p=pool[Math.floor(Math.random()*pool.length)];
+    let guard=0;
+    while(current && p.key===current.key && pool.length>1 && guard++<10){
+      p=pool[Math.floor(Math.random()*pool.length)];
+    }
+    return p;
+  }
+
+  function newQuestion(){
+    locked=false; feedback.textContent=""; feedback.className="feedback";
+    nextBtn.disabled=true; revealBtn.disabled=false;
+    [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=false);
+
+    if(mode==="position"){
+      current=pickPosition();
+      if(!current){ $("prompt").textContent="No notes in this range"; return; }
+      $("eyebrow").textContent="What note is this?";
+      $("prompt").textContent=`${STRINGS[current.s]} • fret ${current.f}`;
+      noteChoices.classList.remove("hidden"); findChoices.classList.add("hidden");
+    }else{
+      // Choose a note from the currently allowed positions, then show fret options on one selected string.
+      const pool=allowedPositions();
+      current=pool[Math.floor(Math.random()*pool.length)];
+      if(!current){ $("prompt").textContent="No notes in this range"; return; }
+      $("eyebrow").textContent=`Find ${NOTES[current.n]} on the`;
+      $("prompt").textContent=STRINGS[current.s];
+      noteChoices.classList.add("hidden"); findChoices.classList.remove("hidden");
+      buildFindButtons(current.s,current.n);
+    }
+    draw();
+  }
+
+  function buildFindButtons(s,targetNote){
+    findChoices.innerHTML="";
+    let lo=+minFret.value, hi=+maxFret.value;
+    if(lo>hi){ const t=lo;lo=hi;hi=t; }
+    for(let f=lo;f<=hi;f++){
+      if(naturalOnly.checked && !NATURAL.has(noteAt(s,f))) continue;
+      const b=document.createElement("button");
+      b.type="button"; b.textContent="Fret "+f; b.dataset.fret=f;
+      b.addEventListener("click",()=>answerFret(f,targetNote,s));
+      findChoices.appendChild(b);
+    }
+  }
+
+  function finish(correct,chosenText,answerText,key){
+    locked=true;
+    data.stats.answered++;
+    if(correct){
+      data.stats.correct++; data.stats.streak++;
+      data.misses[key]=Math.max(0,(data.misses[key]||0)-1);
+      feedback.textContent="Correct — "+answerText;
+      feedback.classList.add("good");
+    }else{
+      data.stats.streak=0;
+      data.misses[key]=(data.misses[key]||0)+1;
+      feedback.textContent=`Not quite. ${answerText}${chosenText ? " (you chose "+chosenText+")" : ""}`;
+      feedback.classList.add("bad");
+    }
+    save(); updateStats();
+    [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=true);
+    revealBtn.disabled=true; nextBtn.disabled=false;
+  }
+
+  function answerNote(i){
+    if(locked||!current)return;
+    finish(i===current.n,NOTES[i],NOTES[current.n],current.key);
+  }
+
+  function answerFret(f,targetNote,s){
+    if(locked||!current)return;
+    const good=noteAt(s,f)===targetNote;
+    const correctFrets=[];
+    let lo=+minFret.value, hi=+maxFret.value;
+    if(lo>hi){const t=lo;lo=hi;hi=t;}
+    for(let x=lo;x<=hi;x++) if(noteAt(s,x)===targetNote) correctFrets.push(x);
+    const answerText=`${NOTES[targetNote]} is at fret ${correctFrets.join(" or ")} in this range.`;
+    finish(good,"fret "+f,answerText,posKey(s,f));
+  }
+
+  function reveal(){
+    if(locked||!current)return;
+    if(mode==="position"){
+      finish(false,"",`Answer: ${NOTES[current.n]}`,current.key);
+    }else{
+      const frets=[];
+      let lo=+minFret.value, hi=+maxFret.value;
+      if(lo>hi){const t=lo;lo=hi;hi=t;}
+      for(let f=lo;f<=hi;f++) if(noteAt(current.s,f)===current.n) frets.push(f);
+      finish(false,"",`Answer: fret ${frets.join(" or ")}`,current.key);
+    }
+  }
+
+  function updateStats(){
+    const s=data.stats;
+    $("answered").textContent=s.answered;
+    $("streak").textContent=s.streak;
+    $("accuracy").textContent=s.answered ? Math.round(s.correct/s.answered*100)+"%" : "—";
+  }
+
+  function draw(){
+    const svgNS="http://www.w3.org/2000/svg";
+    const frets=$("fretLines"), strings=$("stringLines"), inlays=$("inlays"), marker=$("marker"), labels=$("labels");
+    [frets,strings,inlays,marker,labels].forEach(g=>g.innerHTML="");
+    const left=44, top=25, width=650, height=190, fretW=width/13, gap=height/5;
+
+    for(let f=0;f<=13;f++){
+      const x=left+f*fretW, line=document.createElementNS(svgNS,"line");
+      line.setAttribute("x1",x);line.setAttribute("x2",x);line.setAttribute("y1",top);line.setAttribute("y2",top+height);
+      line.setAttribute("stroke","var(--border)");line.setAttribute("stroke-width",f===1?4:1.4);frets.appendChild(line);
+    }
+    for(let s=0;s<6;s++){
+      const y=top+s*gap,line=document.createElementNS(svgNS,"line");
+      line.setAttribute("x1",left);line.setAttribute("x2",left+width);line.setAttribute("y1",y);line.setAttribute("y2",y);
+      line.setAttribute("stroke","var(--text)");line.setAttribute("stroke-width",1+(5-s)*.35);strings.appendChild(line);
+    }
+    [3,5,7,9].forEach(f=>dot(f,top+height/2));
+    dot(12,top+height*.36);dot(12,top+height*.64);
+    function dot(f,y){
+      const c=document.createElementNS(svgNS,"circle");
+      c.setAttribute("cx",left+(f+.5)*fretW);c.setAttribute("cy",y);c.setAttribute("r",5);
+      c.setAttribute("fill","var(--muted)");c.setAttribute("opacity",".45");inlays.appendChild(c);
+    }
+    for(let f=0;f<=12;f++){
+      const t=document.createElementNS(svgNS,"text");
+      t.textContent=f;t.setAttribute("x",left+(f+.5)*fretW);t.setAttribute("y",240);
+      t.setAttribute("text-anchor","middle");t.setAttribute("font-size","12");t.setAttribute("fill","var(--muted)");
+      labels.appendChild(t);
+    }
+    if(current){
+      const x=current.f===0?left+fretW*.48:left+(current.f+.5)*fretW;
+      const y=top+current.s*gap,c=document.createElementNS(svgNS,"circle");
+      c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",13);
+      c.setAttribute("fill","var(--accent)");c.setAttribute("stroke","var(--panel)");c.setAttribute("stroke-width",3);
+      if(mode==="find") c.setAttribute("opacity",".12");
+      marker.appendChild(c);
+    }
+  }
+
+  function showWeak(){
+    const panel=$("weakPanel");
+    if(!panel.classList.contains("hidden")){panel.classList.add("hidden");$("weakBtn").textContent="Show weak spots";return;}
+    const rows=Object.entries(data.misses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    panel.innerHTML=rows.length ? rows.map(([k,v])=>{
+      const [s,f]=k.split("-").map(Number);
+      return `<div class="weakrow"><span>${STRINGS[s]}, fret ${f} — ${NOTES[noteAt(s,f)]}</span><strong>${v}</strong></div>`;
+    }).join("") : `<div class="tiny">No weak spots recorded yet.</div>`;
+    panel.classList.remove("hidden");$("weakBtn").textContent="Hide weak spots";
+  }
+
+  document.querySelectorAll(".modebtn").forEach(btn=>btn.addEventListener("click",()=>{
+    mode=btn.dataset.mode;
+    document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
+    newQuestion();
+  }));
+  [stringSelect,minFret,maxFret,naturalOnly,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  nextBtn.addEventListener("click",newQuestion);
+  revealBtn.addEventListener("click",reveal);
+  $("weakBtn").addEventListener("click",showWeak);
+  $("resetBtn").addEventListener("click",()=>{
+    if(confirm("Reset all saved scores and weak spots?")){
+      data={stats:{answered:0,correct:0,streak:0},misses:{}};
+      save();updateStats();$("weakPanel").classList.add("hidden");newQuestion();
+    }
+  });
+
+  updateStats(); newQuestion();
+})();
+</script>
+</body>
+</html>
