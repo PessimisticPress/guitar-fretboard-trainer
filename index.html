@@ -31,6 +31,8 @@
     h1{font-size:25px;line-height:1.15;margin:4px 0 6px}
     .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
     .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .timed-stats{grid-template-columns:repeat(2,1fr)}
+    .challenge-value{font-size:26px!important}
     .stat,.panel{
       background:var(--panel); border:1px solid var(--border); border-radius:15px;
     }
@@ -80,7 +82,24 @@
     .secondary{margin-top:8px;width:100%}
     .tiny{font-size:12px;color:var(--muted);line-height:1.45;margin-top:10px}
     .modebar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .modebtn.active{background:var(--soft);border-color:var(--text)}
+    .modebtn.active,.practicebtn.active,.durationbtn.active{background:var(--soft);border-color:var(--text)}
+    .practicebar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .durationbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .challenge-setup{text-align:center;padding:10px 4px 4px}
+    .challenge-setup h2{font-size:22px;margin:0 0 6px}
+    .challenge-setup p{font-size:14px;color:var(--muted);margin:0 0 14px;line-height:1.45}
+    .challenge-start{width:100%}
+    .countdown{font-size:42px;font-weight:750;letter-spacing:.02em}
+    .results{text-align:center;padding:8px 2px}
+    .results-score{font-size:48px;font-weight:800;line-height:1;margin:8px 0 4px}
+    .results-label{font-size:13px;color:var(--muted)}
+    .results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0}
+    .result-box{border:1px solid var(--border);border-radius:12px;padding:10px}
+    .result-box strong{display:block;font-size:20px;margin-bottom:2px}
+    .new-best{font-size:15px;font-weight:700;margin:8px 0;color:var(--good)}
+    .challenge-config{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 14px}
+    .result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .settings-note{font-size:11px;color:var(--muted);margin-top:5px}
     .hidden{display:none!important}
     .weaklist{font-size:14px;line-height:1.5}
     .weakrow{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0}
@@ -109,6 +128,21 @@
     <div id="settingsBody" class="settings-body hidden">
       <div class="settings">
         <div class="full">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Practice Style</div>
+          <div class="practicebar">
+            <button type="button" class="practicebtn active" data-practice="standard">Standard</button>
+            <button type="button" class="practicebtn" data-practice="timed">Timed</button>
+          </div>
+        </div>
+        <div id="durationSetting" class="full hidden">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Timed Duration</div>
+          <div class="durationbar">
+            <button type="button" class="durationbtn" data-duration="30">30 sec</button>
+            <button type="button" class="durationbtn active" data-duration="60">60 sec</button>
+            <button type="button" class="durationbtn" data-duration="120">2 min</button>
+          </div>
+        </div>
+        <div class="full">
           <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Quiz Type</div>
           <div class="modebar">
             <button type="button" class="modebtn active" data-mode="position">Name the note</button>
@@ -131,20 +165,50 @@
       <label class="full switchline">
         <span>Natural notes only</span><input id="naturalOnly" type="checkbox" checked>
       </label>
-        <label class="full switchline">
+        <label id="adaptiveRow" class="full switchline">
           <span>Repeat missed positions more often</span><input id="adaptive" type="checkbox" checked>
         </label>
+        <div id="adaptiveTimedNote" class="full settings-note hidden">Adaptive weighting is not used in Timed Challenge.</div>
       </div>
     </div>
   </div>
 
-  <div class="stats">
+  <div id="standardStats" class="stats">
     <div class="stat"><div class="n" id="accuracy">—</div><div class="l">Accuracy</div></div>
     <div class="stat"><div class="n" id="streak">0</div><div class="l">Streak</div></div>
     <div class="stat"><div class="n" id="answered">0</div><div class="l">Answered</div></div>
   </div>
 
-  <div class="panel">
+  <div id="timedStats" class="stats timed-stats hidden">
+    <div class="stat"><div class="n challenge-value" id="timeLeft">1:00</div><div class="l">Time</div></div>
+    <div class="stat"><div class="n challenge-value" id="timedCorrect">0</div><div class="l">Correct</div></div>
+  </div>
+
+  <div id="quizPanel" class="panel">
+    <div id="timedReady" class="challenge-setup hidden">
+      <h2 id="timedReadyTitle">60-Second Challenge</h2>
+      <p id="timedReadyText">Get as many correct as you can. Wrong answers reveal the correct answer while the clock keeps running.</p>
+      <button id="startChallengeBtn" class="primary challenge-start" type="button">Start Challenge</button>
+    </div>
+
+    <div id="timedResults" class="results hidden">
+      <div class="eyebrow">Challenge complete</div>
+      <div id="resultScore" class="results-score">0</div>
+      <div class="results-label">correct</div>
+      <div id="newBest" class="new-best hidden">New personal best!</div>
+      <div class="results-grid">
+        <div class="result-box"><strong id="resultAttempted">0</strong><span class="results-label">Attempted</span></div>
+        <div class="result-box"><strong id="resultAccuracy">—</strong><span class="results-label">Accuracy</span></div>
+      </div>
+      <div id="previousBest" class="tiny"></div>
+      <div id="resultConfig" class="challenge-config"></div>
+      <div class="result-actions">
+        <button id="tryAgainBtn" class="primary" type="button">Try Again</button>
+        <button id="backStandardBtn" type="button">Standard Practice</button>
+      </div>
+    </div>
+
+    <div id="quizExperience">
     <div class="question">
       <div class="eyebrow" id="eyebrow">What note is this?</div>
       <div class="prompt" id="prompt"></div>
@@ -165,13 +229,14 @@
     <div id="findChoices" class="choices hidden"></div>
 
     <div id="feedback" class="feedback" aria-live="polite"></div>
-    <div class="actions">
+    <div id="standardActions" class="actions">
       <button id="revealBtn" type="button">Reveal</button>
       <button id="nextBtn" class="primary" type="button" disabled>Next</button>
     </div>
+    </div>
   </div>
 
-  <div class="panel">
+  <div id="standardFooter" class="panel">
     <button id="weakBtn" type="button" class="secondary">Show weak spots</button>
     <div id="weakPanel" class="weaklist hidden"></div>
     <button id="resetBtn" type="button" class="secondary">Reset all stats</button>
@@ -182,110 +247,110 @@
 <script>
 (() => {
   const NOTES = ["C","C♯/D♭","D","D♯/E♭","E","F","F♯/G♭","G","G♯/A♭","A","A♯/B♭","B"];
-  const SHORT = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
   const NATURAL = new Set([0,2,4,5,7,9,11]);
   const OPEN = [4,9,2,7,11,4];
   const STRINGS = ["6th string (low E)","5th string (A)","4th string (D)","3rd string (G)","2nd string (B)","1st string (high E)"];
   const STORAGE = "guitar-fretboard-trainer-v1";
+  const CORRECT_DELAY = 300;
+  const WRONG_DELAY = 1100;
 
   let mode = "position";
+  let practiceStyle = "standard";
+  let timedDuration = 60;
   let current = null;
   let locked = false;
   let data = load();
+
+  let challengeState = "idle"; // idle, countdown, running, results
+  let challengeCorrect = 0;
+  let challengeAttempted = 0;
+  let challengeDeadline = 0;
+  let challengeInterval = null;
+  let autoAdvanceTimer = null;
+  let countdownTimer = null;
+  let challengeToken = 0;
 
   const $ = id => document.getElementById(id);
   const minFret=$("minFret"), maxFret=$("maxFret"),
         naturalOnly=$("naturalOnly"), adaptive=$("adaptive"), feedback=$("feedback"),
         nextBtn=$("nextBtn"), revealBtn=$("revealBtn"), noteChoices=$("noteChoices"),
         findChoices=$("findChoices"), settingsToggle=$("settingsToggle"),
-        settingsBody=$("settingsBody"), settingsSummary=$("settingsSummary");
+        settingsBody=$("settingsBody"), settingsSummary=$("settingsSummary"),
+        durationSetting=$("durationSetting"), adaptiveTimedNote=$("adaptiveTimedNote"),
+        standardStats=$("standardStats"), timedStats=$("timedStats"),
+        timeLeft=$("timeLeft"), timedCorrect=$("timedCorrect"),
+        timedReady=$("timedReady"), timedResults=$("timedResults"),
+        quizExperience=$("quizExperience"), standardActions=$("standardActions"),
+        standardFooter=$("standardFooter"), startChallengeBtn=$("startChallengeBtn");
 
   for(let i=0;i<=12;i++){
-    minFret.add(new Option(i,i)); maxFret.add(new Option(i,i));
+    minFret.add(new Option(i,i));
+    maxFret.add(new Option(i,i));
   }
-  minFret.value="0"; maxFret.value="5";
+  minFret.value="0";
+  maxFret.value="5";
 
   NOTES.forEach((n,i)=>{
     const b=document.createElement("button");
-    b.type="button"; b.textContent=n; b.dataset.note=i;
+    b.type="button";
+    b.textContent=n;
+    b.dataset.note=i;
     b.addEventListener("click",()=>answerNote(i));
     noteChoices.appendChild(b);
-  });
-
-  function updateNoteChoiceVisibility(){
-    [...noteChoices.children].forEach((b,i)=>{
-      const hide=naturalOnly.checked && !NATURAL.has(i);
-      b.classList.toggle("note-placeholder",hide);
-      b.disabled=hide || locked;
-      b.setAttribute("aria-hidden",hide ? "true" : "false");
-      b.tabIndex=hide ? -1 : 0;
-    });
-  }
-
-  function updateSettingsSummary(){
-    const selected=[...document.querySelectorAll(".stringCheck:checked")].map(x=>+x.dataset.string);
-    let stringText;
-    if(selected.length===6){
-      stringText="All strings";
-    }else if(selected.length===1){
-      const short=["Low E","A","D","G","B","High E"];
-      stringText=short[selected[0]];
-    }else{
-      stringText=selected.length+" strings";
-    }
-
-    let lo=+minFret.value, hi=+maxFret.value;
-    if(lo>hi){const t=lo;lo=hi;hi=t;}
-
-    const modeText=mode==="position" ? "Name the Note" : "Find the Note";
-    const noteText=naturalOnly.checked ? "Naturals" : "All notes";
-    settingsSummary.textContent=`· ${modeText} · ${stringText} · ${lo}–${hi} · ${noteText}`;
-  }
-
-  settingsToggle.addEventListener("click",()=>{
-    const expanded=settingsToggle.getAttribute("aria-expanded")==="true";
-    settingsToggle.setAttribute("aria-expanded",String(!expanded));
-    settingsBody.classList.toggle("hidden",expanded);
   });
 
   function load(){
     try{
       const x=JSON.parse(localStorage.getItem(STORAGE));
-      if(x && x.stats && x.misses) return x;
+      if(x && x.stats && x.misses){
+        if(!x.timedBests) x.timedBests={};
+        return x;
+      }
     }catch(e){}
-    return {stats:{answered:0,correct:0,streak:0}, misses:{}};
+    return {stats:{answered:0,correct:0,streak:0}, misses:{}, timedBests:{}};
   }
+
   function save(){
-    try{ localStorage.setItem(STORAGE,JSON.stringify(data)); }catch(e){}
+    try{localStorage.setItem(STORAGE,JSON.stringify(data));}catch(e){}
   }
-  function posKey(s,f){ return s+"-"+f; }
 
-  function noteAt(s,f){ return (OPEN[s]+f)%12; }
+  function posKey(s,f){return s+"-"+f;}
+  function noteAt(s,f){return (OPEN[s]+f)%12;}
 
-  function allowedPositions(){
-    let lo=+minFret.value, hi=+maxFret.value;
-    if(lo>hi){ const t=lo;lo=hi;hi=t; }
+  function selectedStrings(){
     let strings=[...document.querySelectorAll(".stringCheck:checked")].map(x=>+x.dataset.string);
     if(!strings.length){
       const first=document.querySelector(".stringCheck");
       first.checked=true;
       strings=[0];
     }
+    return strings.sort((a,b)=>a-b);
+  }
+
+  function normalizedRange(){
+    let lo=+minFret.value, hi=+maxFret.value;
+    if(lo>hi){const t=lo;lo=hi;hi=t;}
+    return [lo,hi];
+  }
+
+  function allowedPositions(useAdaptive=true){
+    const [lo,hi]=normalizedRange();
+    const strings=selectedStrings();
     const arr=[];
     for(const s of strings){
       for(let f=lo;f<=hi;f++){
         const n=noteAt(s,f);
         if(naturalOnly.checked && !NATURAL.has(n)) continue;
         let weight=1;
-        if(adaptive.checked) weight += Math.min(data.misses[posKey(s,f)]||0,5);
+        if(useAdaptive && adaptive.checked) weight+=Math.min(data.misses[posKey(s,f)]||0,5);
         for(let w=0;w<weight;w++) arr.push({s,f,n,key:posKey(s,f)});
       }
     }
     return arr;
   }
 
-  function pickPosition(){
-    const pool=allowedPositions();
+  function pickPosition(useAdaptive=true){
+    const pool=allowedPositions(useAdaptive);
     if(!pool.length) return null;
     let p=pool[Math.floor(Math.random()*pool.length)];
     let guard=0;
@@ -295,26 +360,228 @@
     return p;
   }
 
+  function updateNoteChoiceVisibility(){
+    [...noteChoices.children].forEach((b,i)=>{
+      const hide=naturalOnly.checked && !NATURAL.has(i);
+      b.classList.toggle("note-placeholder",hide);
+      b.disabled=hide || locked || challengeState==="countdown";
+      b.setAttribute("aria-hidden",hide ? "true" : "false");
+      b.tabIndex=hide ? -1 : 0;
+    });
+  }
+
+  function formatDuration(seconds){
+    if(seconds===120) return "2 min";
+    return seconds+" sec";
+  }
+
+  function formatClock(seconds){
+    const s=Math.max(0,Math.ceil(seconds));
+    const m=Math.floor(s/60);
+    const r=String(s%60).padStart(2,"0");
+    return `${m}:${r}`;
+  }
+
+  function updateSettingsSummary(){
+    const selected=selectedStrings();
+    let stringText;
+    if(selected.length===6) stringText="All strings";
+    else if(selected.length===1){
+      const short=["Low E","A","D","G","B","High E"];
+      stringText=short[selected[0]];
+    }else stringText=selected.length+" strings";
+
+    const [lo,hi]=normalizedRange();
+    const modeText=mode==="position" ? "Name the Note" : "Find the Note";
+    const noteText=naturalOnly.checked ? "Naturals" : "All notes";
+    const styleText=practiceStyle==="timed" ? `Timed ${formatDuration(timedDuration)}` : "Standard";
+    settingsSummary.textContent=`· ${styleText} · ${modeText} · ${stringText} · ${lo}–${hi} · ${noteText}`;
+  }
+
+  function updateStats(){
+    const s=data.stats;
+    $("answered").textContent=s.answered;
+    $("streak").textContent=s.streak;
+    $("accuracy").textContent=s.answered ? Math.round(s.correct/s.answered*100)+"%" : "—";
+  }
+
+  function clearChallengeTimers(){
+    if(challengeInterval){clearInterval(challengeInterval);challengeInterval=null;}
+    if(autoAdvanceTimer){clearTimeout(autoAdvanceTimer);autoAdvanceTimer=null;}
+    if(countdownTimer){clearTimeout(countdownTimer);countdownTimer=null;}
+  }
+
+  function setConfigDisabled(disabled){
+    document.querySelectorAll(".practicebtn,.durationbtn,.modebtn,.stringCheck,#minFret,#maxFret,#naturalOnly").forEach(el=>{
+      el.disabled=disabled;
+    });
+    settingsToggle.disabled=disabled;
+    if(practiceStyle==="timed") adaptive.disabled=true;
+    else adaptive.disabled=disabled;
+  }
+
+  function collapseSettings(){
+    settingsToggle.setAttribute("aria-expanded","false");
+    settingsBody.classList.add("hidden");
+  }
+
+  function applyPracticeStyle(){
+    const timed=practiceStyle==="timed";
+    durationSetting.classList.toggle("hidden",!timed);
+    adaptiveTimedNote.classList.toggle("hidden",!timed);
+    adaptive.disabled=timed;
+    standardStats.classList.toggle("hidden",timed);
+    timedStats.classList.toggle("hidden",!timed);
+    standardFooter.classList.toggle("hidden",timed);
+    standardActions.classList.toggle("hidden",timed);
+    updateSettingsSummary();
+
+    clearChallengeTimers();
+    challengeToken++;
+    challengeState="idle";
+    setConfigDisabled(false);
+
+    if(timed){
+      timedCorrect.textContent="0";
+      timeLeft.textContent=formatClock(timedDuration);
+      renderTimedReady();
+    }else{
+      timedReady.classList.add("hidden");
+      timedResults.classList.add("hidden");
+      quizExperience.classList.remove("hidden");
+      feedback.textContent="";
+      newQuestion();
+    }
+  }
+
+  function renderTimedReady(){
+    challengeState="idle";
+    quizExperience.classList.add("hidden");
+    timedResults.classList.add("hidden");
+    timedReady.classList.remove("hidden");
+    $("timedReadyTitle").textContent=timedDuration===60 ? "60-Second Challenge" :
+      timedDuration===30 ? "30-Second Challenge" : "2-Minute Challenge";
+    timeLeft.textContent=formatClock(timedDuration);
+    timedCorrect.textContent="0";
+    setConfigDisabled(false);
+  }
+
+  function startChallenge(){
+    if(practiceStyle!=="timed" || challengeState==="running" || challengeState==="countdown") return;
+    clearChallengeTimers();
+    challengeToken++;
+    const token=challengeToken;
+
+    challengeCorrect=0;
+    challengeAttempted=0;
+    timedCorrect.textContent="0";
+    timeLeft.textContent=formatClock(timedDuration);
+    timedReady.classList.add("hidden");
+    timedResults.classList.add("hidden");
+    quizExperience.classList.remove("hidden");
+    standardActions.classList.add("hidden");
+    collapseSettings();
+    setConfigDisabled(true);
+
+    challengeState="countdown";
+    locked=true;
+    noteChoices.classList.add("hidden");
+    findChoices.classList.add("hidden");
+    feedback.textContent="";
+    $("eyebrow").textContent="Timed Challenge";
+    $("prompt").innerHTML='<span class="countdown">3</span>';
+    $("marker").innerHTML="";
+
+    let count=3;
+    const step=()=>{
+      if(token!==challengeToken || challengeState!=="countdown") return;
+      if(count>1){
+        count--;
+        $("prompt").innerHTML=`<span class="countdown">${count}</span>`;
+        countdownTimer=setTimeout(step,700);
+      }else{
+        $("prompt").innerHTML='<span class="countdown">GO</span>';
+        countdownTimer=setTimeout(()=>{
+          if(token!==challengeToken || challengeState!=="countdown") return;
+          challengeState="running";
+          locked=false;
+          challengeDeadline=performance.now()+timedDuration*1000;
+          challengeInterval=setInterval(updateChallengeClock,100);
+          timedNewQuestion();
+        },450);
+      }
+    };
+    countdownTimer=setTimeout(step,700);
+  }
+
+  function updateChallengeClock(){
+    if(challengeState!=="running") return;
+    const remaining=(challengeDeadline-performance.now())/1000;
+    timeLeft.textContent=formatClock(remaining);
+    if(remaining<=0) endChallenge();
+  }
+
+  function challengeExpired(){
+    return challengeState!=="running" || performance.now()>=challengeDeadline;
+  }
+
   function newQuestion(){
-    locked=false; feedback.textContent=""; feedback.className="feedback";
-    nextBtn.disabled=true; revealBtn.disabled=false;
+    if(practiceStyle==="timed"){
+      if(challengeState==="running") timedNewQuestion();
+      return;
+    }
+
+    locked=false;
+    feedback.textContent="";
+    feedback.className="feedback";
+    nextBtn.disabled=true;
+    revealBtn.disabled=false;
     [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=false);
     updateNoteChoiceVisibility();
 
     if(mode==="position"){
-      current=pickPosition();
-      if(!current){ $("prompt").textContent="No notes in this range"; return; }
+      current=pickPosition(true);
+      if(!current){$("prompt").textContent="No notes in this range";return;}
       $("eyebrow").textContent="What note is this?";
       $("prompt").textContent=`${STRINGS[current.s]} • fret ${current.f}`;
-      noteChoices.classList.remove("hidden"); findChoices.classList.add("hidden");
+      noteChoices.classList.remove("hidden");
+      findChoices.classList.add("hidden");
     }else{
-      // Choose a note from the currently allowed positions, then show fret options on one selected string.
-      const pool=allowedPositions();
+      const pool=allowedPositions(true);
       current=pool[Math.floor(Math.random()*pool.length)];
-      if(!current){ $("prompt").textContent="No notes in this range"; return; }
+      if(!current){$("prompt").textContent="No notes in this range";return;}
       $("eyebrow").textContent=`Find ${NOTES[current.n]} on the`;
       $("prompt").textContent=STRINGS[current.s];
-      noteChoices.classList.add("hidden"); findChoices.classList.remove("hidden");
+      noteChoices.classList.add("hidden");
+      findChoices.classList.remove("hidden");
+      buildFindButtons(current.s,current.n);
+    }
+    draw();
+  }
+
+  function timedNewQuestion(){
+    if(challengeExpired()){endChallenge();return;}
+    locked=false;
+    feedback.textContent="";
+    feedback.className="feedback";
+    [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=false);
+    updateNoteChoiceVisibility();
+
+    if(mode==="position"){
+      current=pickPosition(false);
+      if(!current){endChallenge();return;}
+      $("eyebrow").textContent="What note is this?";
+      $("prompt").textContent=`${STRINGS[current.s]} • fret ${current.f}`;
+      noteChoices.classList.remove("hidden");
+      findChoices.classList.add("hidden");
+    }else{
+      const pool=allowedPositions(false);
+      current=pool[Math.floor(Math.random()*pool.length)];
+      if(!current){endChallenge();return;}
+      $("eyebrow").textContent=`Find ${NOTES[current.n]} on the`;
+      $("prompt").textContent=STRINGS[current.s];
+      noteChoices.classList.add("hidden");
+      findChoices.classList.remove("hidden");
       buildFindButtons(current.s,current.n);
     }
     draw();
@@ -322,22 +589,24 @@
 
   function buildFindButtons(s,targetNote){
     findChoices.innerHTML="";
-    let lo=+minFret.value, hi=+maxFret.value;
-    if(lo>hi){ const t=lo;lo=hi;hi=t; }
+    const [lo,hi]=normalizedRange();
     for(let f=lo;f<=hi;f++){
       if(naturalOnly.checked && !NATURAL.has(noteAt(s,f))) continue;
       const b=document.createElement("button");
-      b.type="button"; b.textContent="Fret "+f; b.dataset.fret=f;
+      b.type="button";
+      b.textContent="Fret "+f;
+      b.dataset.fret=f;
       b.addEventListener("click",()=>answerFret(f,targetNote,s));
       findChoices.appendChild(b);
     }
   }
 
-  function finish(correct,chosenText,answerText,key){
+  function standardFinish(correct,chosenText,answerText,key){
     locked=true;
     data.stats.answered++;
     if(correct){
-      data.stats.correct++; data.stats.streak++;
+      data.stats.correct++;
+      data.stats.streak++;
       data.misses[key]=Math.max(0,(data.misses[key]||0)-1);
       feedback.textContent="Correct — "+answerText;
       feedback.classList.add("good");
@@ -347,45 +616,121 @@
       feedback.textContent=`Not quite. ${answerText}${chosenText ? " (you chose "+chosenText+")" : ""}`;
       feedback.classList.add("bad");
     }
-    save(); updateStats(); draw();
+    save();
+    updateStats();
+    draw();
     [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=true);
-    revealBtn.disabled=true; nextBtn.disabled=false;
+    revealBtn.disabled=true;
+    nextBtn.disabled=false;
+  }
+
+  function timedFinish(correct,chosenText,answerText){
+    if(challengeExpired()){endChallenge();return;}
+    locked=true;
+    challengeAttempted++;
+    if(correct){
+      challengeCorrect++;
+      timedCorrect.textContent=challengeCorrect;
+      feedback.textContent="Correct";
+      feedback.className="feedback good";
+    }else{
+      feedback.textContent=`Not quite. ${answerText}${chosenText ? " (you chose "+chosenText+")" : ""}`;
+      feedback.className="feedback bad";
+    }
+    draw();
+    [...noteChoices.children,...findChoices.children].forEach(b=>b.disabled=true);
+
+    const token=challengeToken;
+    autoAdvanceTimer=setTimeout(()=>{
+      if(token!==challengeToken || challengeState!=="running") return;
+      if(challengeExpired()){endChallenge();return;}
+      timedNewQuestion();
+    },correct ? CORRECT_DELAY : WRONG_DELAY);
   }
 
   function answerNote(i){
-    if(locked||!current)return;
-    finish(i===current.n,NOTES[i],NOTES[current.n],current.key);
-  }
-
-  function answerFret(f,targetNote,s){
-    if(locked||!current)return;
-    const good=noteAt(s,f)===targetNote;
-    const correctFrets=[];
-    let lo=+minFret.value, hi=+maxFret.value;
-    if(lo>hi){const t=lo;lo=hi;hi=t;}
-    for(let x=lo;x<=hi;x++) if(noteAt(s,x)===targetNote) correctFrets.push(x);
-    const answerText=`${NOTES[targetNote]} is at fret ${correctFrets.join(" or ")} in this range.`;
-    finish(good,"fret "+f,answerText,posKey(s,f));
-  }
-
-  function reveal(){
-    if(locked||!current)return;
-    if(mode==="position"){
-      finish(false,"",`Answer: ${NOTES[current.n]}`,current.key);
+    if(locked||!current) return;
+    const correct=i===current.n;
+    if(practiceStyle==="timed"){
+      timedFinish(correct,NOTES[i],`Answer: ${NOTES[current.n]}`);
     }else{
-      const frets=[];
-      let lo=+minFret.value, hi=+maxFret.value;
-      if(lo>hi){const t=lo;lo=hi;hi=t;}
-      for(let f=lo;f<=hi;f++) if(noteAt(current.s,f)===current.n) frets.push(f);
-      finish(false,"",`Answer: fret ${frets.join(" or ")}`,current.key);
+      standardFinish(correct,NOTES[i],NOTES[current.n],current.key);
     }
   }
 
-  function updateStats(){
-    const s=data.stats;
-    $("answered").textContent=s.answered;
-    $("streak").textContent=s.streak;
-    $("accuracy").textContent=s.answered ? Math.round(s.correct/s.answered*100)+"%" : "—";
+  function answerFret(f,targetNote,s){
+    if(locked||!current) return;
+    const good=noteAt(s,f)===targetNote;
+    const correctFrets=[];
+    const [lo,hi]=normalizedRange();
+    for(let x=lo;x<=hi;x++) if(noteAt(s,x)===targetNote) correctFrets.push(x);
+    const answerText=`${NOTES[targetNote]} is at fret ${correctFrets.join(" or ")} in this range.`;
+
+    if(practiceStyle==="timed"){
+      timedFinish(good,"fret "+f,answerText);
+    }else{
+      standardFinish(good,"fret "+f,answerText,posKey(s,f));
+    }
+  }
+
+  function reveal(){
+    if(practiceStyle==="timed" || locked || !current) return;
+    if(mode==="position"){
+      standardFinish(false,"",`Answer: ${NOTES[current.n]}`,current.key);
+    }else{
+      const frets=[];
+      const [lo,hi]=normalizedRange();
+      for(let f=lo;f<=hi;f++) if(noteAt(current.s,f)===current.n) frets.push(f);
+      standardFinish(false,"",`Answer: fret ${frets.join(" or ")}`,current.key);
+    }
+  }
+
+  function challengeConfigKey(){
+    const strings=selectedStrings().join(",");
+    const [lo,hi]=normalizedRange();
+    return [mode,timedDuration,strings,lo,hi,naturalOnly.checked ? "natural" : "all"].join("|");
+  }
+
+  function challengeConfigText(){
+    const selected=selectedStrings();
+    let stringsText;
+    if(selected.length===6) stringsText="All strings";
+    else{
+      const short=["Low E","A","D","G","B","High E"];
+      stringsText=selected.map(i=>short[i]).join(", ");
+    }
+    const [lo,hi]=normalizedRange();
+    const modeText=mode==="position" ? "Name the Note" : "Find the Note";
+    return `${formatDuration(timedDuration)} · ${modeText} · ${stringsText} · Frets ${lo}–${hi} · ${naturalOnly.checked ? "Naturals" : "All notes"}`;
+  }
+
+  function endChallenge(){
+    if(challengeState!=="running" && challengeState!=="countdown") return;
+    clearChallengeTimers();
+    challengeToken++;
+    challengeState="results";
+    locked=true;
+    timeLeft.textContent="0:00";
+    setConfigDisabled(false);
+
+    const key=challengeConfigKey();
+    const prior=Number(data.timedBests[key]||0);
+    const isNewBest=challengeCorrect>prior;
+    if(isNewBest){
+      data.timedBests[key]=challengeCorrect;
+      save();
+    }
+
+    quizExperience.classList.add("hidden");
+    timedReady.classList.add("hidden");
+    timedResults.classList.remove("hidden");
+
+    $("resultScore").textContent=challengeCorrect;
+    $("resultAttempted").textContent=challengeAttempted;
+    $("resultAccuracy").textContent=challengeAttempted ? Math.round(challengeCorrect/challengeAttempted*100)+"%" : "—";
+    $("newBest").classList.toggle("hidden",!isNewBest);
+    $("previousBest").textContent=prior ? `Previous best: ${prior} correct` : (isNewBest ? "First score for this challenge setup." : "");
+    $("resultConfig").textContent=challengeConfigText();
   }
 
   function draw(){
@@ -406,17 +751,20 @@
     }
     [3,5,7,9].forEach(f=>dot(f,top+height/2));
     dot(12,top+height*.36);dot(12,top+height*.64);
+
     function dot(f,y){
       const c=document.createElementNS(svgNS,"circle");
       c.setAttribute("cx",left+(f+.5)*fretW);c.setAttribute("cy",y);c.setAttribute("r",5);
       c.setAttribute("fill","var(--muted)");c.setAttribute("opacity",".45");inlays.appendChild(c);
     }
+
     for(let f=0;f<=12;f++){
       const t=document.createElementNS(svgNS,"text");
       t.textContent=f;t.setAttribute("x",left+(f+.5)*fretW);t.setAttribute("y",240);
       t.setAttribute("text-anchor","middle");t.setAttribute("font-size","12");t.setAttribute("fill","var(--muted)");
       labels.appendChild(t);
     }
+
     const shortStringLabels=["6th E","5th A","4th D","3rd G","2nd B","1st E"];
     for(let s=0;s<6;s++){
       const t=document.createElementNS(svgNS,"text");
@@ -428,8 +776,9 @@
       t.setAttribute("fill","var(--muted)");
       labels.appendChild(t);
     }
-    if(current && (mode !== "find" || locked)){
-      const x=current.f===0?left+fretW*.48:left+(current.f+.5)*fretW;
+
+    if(current && (mode!=="find" || locked)){
+      const x=current.f===0 ? left+fretW*.48 : left+(current.f+.5)*fretW;
       const y=top+(5-current.s)*gap,c=document.createElementNS(svgNS,"circle");
       c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",13);
       c.setAttribute("fill","var(--accent)");c.setAttribute("stroke","var(--panel)");c.setAttribute("stroke-width",3);
@@ -439,46 +788,100 @@
 
   function showWeak(){
     const panel=$("weakPanel");
-    if(!panel.classList.contains("hidden")){panel.classList.add("hidden");$("weakBtn").textContent="Show weak spots";return;}
+    if(!panel.classList.contains("hidden")){
+      panel.classList.add("hidden");
+      $("weakBtn").textContent="Show weak spots";
+      return;
+    }
     const rows=Object.entries(data.misses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
     panel.innerHTML=rows.length ? rows.map(([k,v])=>{
       const [s,f]=k.split("-").map(Number);
       return `<div class="weakrow"><span>${STRINGS[s]}, fret ${f} — ${NOTES[noteAt(s,f)]}</span><strong>${v}</strong></div>`;
     }).join("") : `<div class="tiny">No weak spots recorded yet.</div>`;
-    panel.classList.remove("hidden");$("weakBtn").textContent="Hide weak spots";
+    panel.classList.remove("hidden");
+    $("weakBtn").textContent="Hide weak spots";
   }
+
+  settingsToggle.addEventListener("click",()=>{
+    if(settingsToggle.disabled) return;
+    const expanded=settingsToggle.getAttribute("aria-expanded")==="true";
+    settingsToggle.setAttribute("aria-expanded",String(!expanded));
+    settingsBody.classList.toggle("hidden",expanded);
+  });
+
+  document.querySelectorAll(".practicebtn").forEach(btn=>btn.addEventListener("click",()=>{
+    practiceStyle=btn.dataset.practice;
+    document.querySelectorAll(".practicebtn").forEach(b=>b.classList.toggle("active",b===btn));
+    applyPracticeStyle();
+  }));
+
+  document.querySelectorAll(".durationbtn").forEach(btn=>btn.addEventListener("click",()=>{
+    timedDuration=+btn.dataset.duration;
+    document.querySelectorAll(".durationbtn").forEach(b=>b.classList.toggle("active",b===btn));
+    updateSettingsSummary();
+    if(practiceStyle==="timed") renderTimedReady();
+  }));
 
   document.querySelectorAll(".modebtn").forEach(btn=>btn.addEventListener("click",()=>{
     mode=btn.dataset.mode;
     document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
     updateSettingsSummary();
-    newQuestion();
+    if(practiceStyle==="timed") renderTimedReady();
+    else newQuestion();
   }));
-  [minFret,maxFret,adaptive].forEach(el=>el.addEventListener("change",()=>{
+
+  [minFret,maxFret].forEach(el=>el.addEventListener("change",()=>{
     updateSettingsSummary();
-    newQuestion();
+    if(practiceStyle==="timed") renderTimedReady();
+    else newQuestion();
   }));
+
+  adaptive.addEventListener("change",()=>{
+    updateSettingsSummary();
+    if(practiceStyle==="standard") newQuestion();
+  });
+
   naturalOnly.addEventListener("change",()=>{
     updateNoteChoiceVisibility();
     updateSettingsSummary();
-    newQuestion();
+    if(practiceStyle==="timed") renderTimedReady();
+    else newQuestion();
   });
+
   document.querySelectorAll(".stringCheck").forEach(el=>el.addEventListener("change",()=>{
     if(!document.querySelector(".stringCheck:checked")) el.checked=true;
     updateSettingsSummary();
-    newQuestion();
+    if(practiceStyle==="timed") renderTimedReady();
+    else newQuestion();
   }));
+
   nextBtn.addEventListener("click",newQuestion);
   revealBtn.addEventListener("click",reveal);
+  startChallengeBtn.addEventListener("click",startChallenge);
+  $("tryAgainBtn").addEventListener("click",renderTimedReady);
+  $("backStandardBtn").addEventListener("click",()=>{
+    practiceStyle="standard";
+    document.querySelectorAll(".practicebtn").forEach(b=>b.classList.toggle("active",b.dataset.practice==="standard"));
+    applyPracticeStyle();
+  });
+
   $("weakBtn").addEventListener("click",showWeak);
   $("resetBtn").addEventListener("click",()=>{
-    if(confirm("Reset all saved scores and weak spots?")){
-      data={stats:{answered:0,correct:0,streak:0},misses:{}};
-      save();updateStats();$("weakPanel").classList.add("hidden");newQuestion();
+    if(confirm("Reset all saved scores, weak spots, and timed personal bests?")){
+      data={stats:{answered:0,correct:0,streak:0},misses:{},timedBests:{}};
+      save();
+      updateStats();
+      $("weakPanel").classList.add("hidden");
+      $("weakBtn").textContent="Show weak spots";
+      if(practiceStyle==="timed") renderTimedReady();
+      else newQuestion();
     }
   });
 
-  updateStats(); updateNoteChoiceVisibility(); updateSettingsSummary(); newQuestion();
+  updateStats();
+  updateNoteChoiceVisibility();
+  updateSettingsSummary();
+  applyPracticeStyle();
 })();
 </script>
 </body>
