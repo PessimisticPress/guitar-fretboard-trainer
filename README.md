@@ -124,6 +124,10 @@ A personal best is compared only against an **exact matching challenge configura
 
 For example, a 60-second Name the Note run using all strings, frets 0–5, and Natural Notes Only is not compared with a 60-second run using frets 0–12 or chromatic notes.
 
+The pre-challenge screen shows the personal best for the exact current challenge configuration so the player knows the score to beat.
+
+A **View Records** control allows the player to browse saved Timed Challenge personal bests across configurations. The current configuration is identified in the records list.
+
 The results screen shows:
 
 - Correct answers
@@ -132,6 +136,19 @@ The results screen shows:
 - Whether the score is a new personal best
 - Previous best when one exists
 - The exact challenge configuration
+
+#### Timed Challenge Review
+
+After a timed run, **Review Challenge** provides a review based only on the challenge that just ended.
+
+The review groups encountered targets into:
+
+- **Needs Work** — any target missed at least once during the challenge
+- **Strong** — targets answered correctly every time they appeared
+
+Each review row shows the target and the number correct out of the number attempted.
+
+Timed Challenge review data is session-specific and does **not** feed into Standard Practice weak-position/adaptive data.
 
 ## Practice Controls
 
@@ -222,6 +239,8 @@ Saved data includes:
 - Weak-position counts
 - Timed personal bests
 
+The most recent Timed Challenge review is kept only for the current in-app challenge result and is not stored as long-term weakness data.
+
 Existing v1.x standard statistics should remain compatible with v2.0. If older saved data does not contain timed personal-best storage, v2.0 initializes that portion without resetting existing statistics.
 
 Reset All Stats clears standard statistics, weak spots, and timed personal bests.
@@ -276,7 +295,7 @@ Preserve this architecture unless a future requirement genuinely justifies chang
 - **v1.0** — original known-good baseline.
 - **v1.1** — all strings selected by default; Natural Notes Only enabled by default; accidental buttons hidden while preserving grid positions.
 - **v1.2** — collapsible Settings, compact settings summary, Quiz Type moved into Settings, and metrics placed immediately above the quiz.
-- **v2.0** — candidate introducing Timed Challenge; do not mark known-good until tested and tagged.
+- **v2.0** — final candidate introducing Timed Challenge, exact-configuration personal bests, visible records, pre-challenge best-to-beat display, and per-run Challenge Review; do not mark known-good until tested and tagged.
 
 ## Future Ideas Not Yet Implemented
 

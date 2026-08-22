@@ -100,6 +100,15 @@
     .challenge-config{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 14px}
     .result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .settings-note{font-size:11px;color:var(--muted);margin-top:5px}
+    .ready-best{font-size:14px;font-weight:650;margin:0 0 12px}
+    .records-panel,.review-panel{margin-top:10px;text-align:left;border-top:1px solid var(--border);padding-top:10px}
+    .records-title,.review-title{font-size:13px;font-weight:700;margin:0 0 7px}
+    .record-row,.review-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.35}
+    .record-row:last-child,.review-row:last-child{border-bottom:0}
+    .record-config,.review-label{min-width:0}
+    .record-score,.review-score{font-weight:700;white-space:nowrap}
+    .review-group + .review-group{margin-top:12px}
+    .review-group-title{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px}
     .hidden{display:none!important}
     .weaklist{font-size:14px;line-height:1.5}
     .weakrow{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0}
@@ -187,8 +196,11 @@
   <div id="quizPanel" class="panel">
     <div id="timedReady" class="challenge-setup hidden">
       <h2 id="timedReadyTitle">60-Second Challenge</h2>
+      <div id="readyBest" class="ready-best">Personal best: —</div>
       <p id="timedReadyText">Get as many correct as you can. Wrong answers reveal the correct answer while the clock keeps running.</p>
       <button id="startChallengeBtn" class="primary challenge-start" type="button">Start Challenge</button>
+      <button id="recordsBtn" class="secondary" type="button">View Records</button>
+      <div id="recordsPanel" class="records-panel hidden"></div>
     </div>
 
     <div id="timedResults" class="results hidden">
@@ -206,6 +218,8 @@
         <button id="tryAgainBtn" class="primary" type="button">Try Again</button>
         <button id="backStandardBtn" type="button">Standard Practice</button>
       </div>
+      <button id="reviewChallengeBtn" class="secondary" type="button">Review Challenge</button>
+      <div id="challengeReview" class="review-panel hidden"></div>
     </div>
 
     <div id="quizExperience">
@@ -264,6 +278,7 @@
   let challengeState = "idle"; // idle, countdown, running, results
   let challengeCorrect = 0;
   let challengeAttempted = 0;
+  let challengeReviewData = [];
   let challengeDeadline = 0;
   let challengeInterval = null;
   let autoAdvanceTimer = null;
@@ -281,7 +296,9 @@
         timeLeft=$("timeLeft"), timedCorrect=$("timedCorrect"),
         timedReady=$("timedReady"), timedResults=$("timedResults"),
         quizExperience=$("quizExperience"), standardActions=$("standardActions"),
-        standardFooter=$("standardFooter"), startChallengeBtn=$("startChallengeBtn");
+        standardFooter=$("standardFooter"), startChallengeBtn=$("startChallengeBtn"),
+        readyBest=$("readyBest"), recordsBtn=$("recordsBtn"), recordsPanel=$("recordsPanel"),
+        reviewChallengeBtn=$("reviewChallengeBtn"), challengeReview=$("challengeReview");
 
   for(let i=0;i<=12;i++){
     minFret.add(new Option(i,i));
@@ -463,6 +480,9 @@
       timedDuration===30 ? "30-Second Challenge" : "2-Minute Challenge";
     timeLeft.textContent=formatClock(timedDuration);
     timedCorrect.textContent="0";
+    updateReadyBest();
+    recordsPanel.classList.add("hidden");
+    recordsBtn.textContent="View Records";
     setConfigDisabled(false);
   }
 
@@ -474,6 +494,9 @@
 
     challengeCorrect=0;
     challengeAttempted=0;
+    challengeReviewData=[];
+    challengeReview.classList.add("hidden");
+    reviewChallengeBtn.textContent="Review Challenge";
     timedCorrect.textContent="0";
     timeLeft.textContent=formatClock(timedDuration);
     timedReady.classList.add("hidden");
@@ -628,6 +651,7 @@
     if(challengeExpired()){endChallenge();return;}
     locked=true;
     challengeAttempted++;
+    recordTimedAttempt(correct);
     if(correct){
       challengeCorrect++;
       timedCorrect.textContent=challengeCorrect;
@@ -704,6 +728,127 @@
     return `${formatDuration(timedDuration)} · ${modeText} · ${stringsText} · Frets ${lo}–${hi} · ${naturalOnly.checked ? "Naturals" : "All notes"}`;
   }
 
+  function configTextFromKey(key){
+    const parts=String(key).split("|");
+    if(parts.length!==6) return key;
+    const [savedMode,duration,stringsRaw,lo,hi,noteMode]=parts;
+    const indexes=stringsRaw.split(",").filter(Boolean).map(Number);
+    const short=["Low E","A","D","G","B","High E"];
+    const stringsText=indexes.length===6 ? "All strings" : indexes.map(i=>short[i] ?? "?").join(", ");
+    const modeText=savedMode==="position" ? "Name the Note" : "Find the Note";
+    const noteText=noteMode==="natural" ? "Naturals" : "All notes";
+    return `${formatDuration(Number(duration))} · ${modeText} · ${stringsText} · ${lo}–${hi} · ${noteText}`;
+  }
+
+  function updateReadyBest(){
+    const best=Number(data.timedBests[challengeConfigKey()]||0);
+    readyBest.textContent=best ? `Personal best: ${best}` : "Personal best: —";
+  }
+
+  function renderRecords(){
+    const entries=Object.entries(data.timedBests)
+      .filter(([,score])=>Number(score)>0);
+    const currentKey=challengeConfigKey();
+
+    entries.sort((a,b)=>{
+      if(a[0]===currentKey && b[0]!==currentKey) return -1;
+      if(b[0]===currentKey && a[0]!==currentKey) return 1;
+      const ap=a[0].split("|"), bp=b[0].split("|");
+      const durDiff=Number(ap[1])-Number(bp[1]);
+      if(durDiff) return durDiff;
+      return configTextFromKey(a[0]).localeCompare(configTextFromKey(b[0]));
+    });
+
+    if(!entries.length){
+      recordsPanel.innerHTML='<div class="tiny">No timed records yet. Complete a challenge to set your first personal best.</div>';
+      return;
+    }
+
+    recordsPanel.innerHTML=
+      '<div class="records-title">Your Timed Records</div>'+
+      entries.map(([key,score])=>{
+        const current=key===currentKey ? ' <strong>Current setup</strong>' : '';
+        return `<div class="record-row"><span class="record-config">${configTextFromKey(key)}${current}</span><span class="record-score">${score}</span></div>`;
+      }).join("");
+  }
+
+  function toggleRecords(){
+    const opening=recordsPanel.classList.contains("hidden");
+    if(opening) renderRecords();
+    recordsPanel.classList.toggle("hidden",!opening);
+    recordsBtn.textContent=opening ? "Hide Records" : "View Records";
+  }
+
+  function reviewIdentity(){
+    if(mode==="position"){
+      return {
+        key:`position|${current.s}|${current.f}`,
+        label:`${STRINGS[current.s]}, fret ${current.f} — ${NOTES[current.n]}`
+      };
+    }
+
+    const [lo,hi]=normalizedRange();
+    const frets=[];
+    for(let f=lo;f<=hi;f++) if(noteAt(current.s,f)===current.n) frets.push(f);
+    return {
+      key:`find|${current.s}|${current.n}`,
+      label:`${STRINGS[current.s]} — ${NOTES[current.n]} at fret ${frets.join(" or ")}`
+    };
+  }
+
+  function recordTimedAttempt(correct){
+    const identity=reviewIdentity();
+    challengeReviewData.push({
+      key:identity.key,
+      label:identity.label,
+      correct:Boolean(correct)
+    });
+  }
+
+  function renderChallengeReview(){
+    const grouped=new Map();
+    for(const item of challengeReviewData){
+      if(!grouped.has(item.key)){
+        grouped.set(item.key,{label:item.label,attempted:0,correct:0});
+      }
+      const row=grouped.get(item.key);
+      row.attempted++;
+      if(item.correct) row.correct++;
+    }
+
+    const rows=[...grouped.values()];
+    if(!rows.length){
+      challengeReview.innerHTML='<div class="tiny">No answered questions to review.</div>';
+      return;
+    }
+
+    const strong=rows
+      .filter(r=>r.correct===r.attempted)
+      .sort((a,b)=>b.attempted-a.attempted || a.label.localeCompare(b.label));
+    const needsWork=rows
+      .filter(r=>r.correct<r.attempted)
+      .sort((a,b)=>(a.correct/a.attempted)-(b.correct/b.attempted) || b.attempted-a.attempted || a.label.localeCompare(b.label));
+
+    const groupHtml=(title,items,emptyText)=>{
+      const body=items.length
+        ? items.map(r=>`<div class="review-row"><span class="review-label">${r.label}</span><span class="review-score">${r.correct}/${r.attempted}</span></div>`).join("")
+        : `<div class="tiny">${emptyText}</div>`;
+      return `<div class="review-group"><div class="review-group-title">${title}</div>${body}</div>`;
+    };
+
+    challengeReview.innerHTML=
+      '<div class="review-title">Challenge Review</div>'+
+      groupHtml("Needs Work",needsWork,"No misses in this challenge.")+
+      groupHtml("Strong",strong,"No positions were perfect this time.");
+  }
+
+  function toggleChallengeReview(){
+    const opening=challengeReview.classList.contains("hidden");
+    if(opening) renderChallengeReview();
+    challengeReview.classList.toggle("hidden",!opening);
+    reviewChallengeBtn.textContent=opening ? "Hide Review" : "Review Challenge";
+  }
+
   function endChallenge(){
     if(challengeState!=="running" && challengeState!=="countdown") return;
     clearChallengeTimers();
@@ -731,6 +876,9 @@
     $("newBest").classList.toggle("hidden",!isNewBest);
     $("previousBest").textContent=prior ? `Previous best: ${prior} correct` : (isNewBest ? "First score for this challenge setup." : "");
     $("resultConfig").textContent=challengeConfigText();
+    challengeReview.classList.add("hidden");
+    reviewChallengeBtn.textContent="Review Challenge";
+    updateReadyBest();
   }
 
   function draw(){
@@ -858,6 +1006,8 @@
   nextBtn.addEventListener("click",newQuestion);
   revealBtn.addEventListener("click",reveal);
   startChallengeBtn.addEventListener("click",startChallenge);
+  recordsBtn.addEventListener("click",toggleRecords);
+  reviewChallengeBtn.addEventListener("click",toggleChallengeReview);
   $("tryAgainBtn").addEventListener("click",renderTimedReady);
   $("backStandardBtn").addEventListener("click",()=>{
     practiceStyle="standard";
