@@ -105,22 +105,22 @@
   </div>
 
   <div class="panel">
-    <div class="modebar">
-      <button type="button" class="modebtn active" data-mode="position">Name the note</button>
-      <button type="button" class="modebtn" data-mode="find">Find the note</button>
-    </div>
-  </div>
-
-  <div class="panel">
     <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="settingsBody">
       <span class="settings-line">
         <span class="settings-title">Settings</span>
-        <span id="settingsSummary" class="settings-summary">· All strings · 0–5 · Naturals</span>
+        <span id="settingsSummary" class="settings-summary">· Name the Note · All strings · 0–5 · Naturals</span>
       </span>
       <span class="settings-chevron" aria-hidden="true">⌄</span>
     </button>
     <div id="settingsBody" class="settings-body hidden">
       <div class="settings">
+        <div class="full">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Quiz Type</div>
+          <div class="modebar">
+            <button type="button" class="modebtn active" data-mode="position">Name the note</button>
+            <button type="button" class="modebtn" data-mode="find">Find the note</button>
+          </div>
+        </div>
         <div class="full">
           <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Strings — select one or more</div>
         <div id="stringChecks" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
@@ -237,8 +237,9 @@
     let lo=+minFret.value, hi=+maxFret.value;
     if(lo>hi){const t=lo;lo=hi;hi=t;}
 
+    const modeText=mode==="position" ? "Name the Note" : "Find the Note";
     const noteText=naturalOnly.checked ? "Naturals" : "All notes";
-    settingsSummary.textContent=`· ${stringText} · ${lo}–${hi} · ${noteText}`;
+    settingsSummary.textContent=`· ${modeText} · ${stringText} · ${lo}–${hi} · ${noteText}`;
   }
 
   settingsToggle.addEventListener("click",()=>{
@@ -450,6 +451,7 @@
   document.querySelectorAll(".modebtn").forEach(btn=>btn.addEventListener("click",()=>{
     mode=btn.dataset.mode;
     document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
+    updateSettingsSummary();
     newQuestion();
   }));
   [minFret,maxFret,adaptive].forEach(el=>el.addEventListener("change",()=>{
