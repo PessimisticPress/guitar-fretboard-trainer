@@ -39,6 +39,17 @@
     .stat .l{font-size:11px;color:var(--muted);margin-top:2px}
     .panel{padding:13px;margin-bottom:12px}
     .settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .settings-toggle{
+      width:100%;min-height:44px;padding:0;border:0;background:transparent;color:var(--text);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
+      border-radius:0;
+    }
+    .settings-toggle:active{transform:none}
+    .settings-title{font-size:16px;font-weight:650}
+    .settings-summary{font-size:12px;color:var(--muted);margin-top:3px;font-weight:400}
+    .settings-chevron{font-size:18px;color:var(--muted);transition:transform .18s ease}
+    .settings-toggle[aria-expanded="true"] .settings-chevron{transform:rotate(180deg)}
+    .settings-body{padding-top:10px}
     label{font-size:12px;color:var(--muted);display:block}
     select{
       width:100%; margin-top:5px; border:1px solid var(--border); background:var(--panel);
@@ -100,9 +111,17 @@
   </div>
 
   <div class="panel">
-    <div class="settings">
-      <div class="full">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Strings — select one or more</div>
+    <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="settingsBody">
+      <span>
+        <span class="settings-title">Practice Settings</span>
+        <span id="settingsSummary" class="settings-summary">All strings · Frets 0–5 · Naturals · Adaptive</span>
+      </span>
+      <span class="settings-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="settingsBody" class="settings-body hidden">
+      <div class="settings">
+        <div class="full">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Strings — select one or more</div>
         <div id="stringChecks" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="0" type="checkbox" checked><span>6th — Low E</span></label>
           <label class="switchline" style="justify-content:flex-start"><input class="stringCheck" data-string="1" type="checkbox" checked><span>5th — A</span></label>
@@ -117,9 +136,10 @@
       <label class="full switchline">
         <span>Natural notes only</span><input id="naturalOnly" type="checkbox" checked>
       </label>
-      <label class="full switchline">
-        <span>Repeat missed positions more often</span><input id="adaptive" type="checkbox" checked>
-      </label>
+        <label class="full switchline">
+          <span>Repeat missed positions more often</span><input id="adaptive" type="checkbox" checked>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -176,7 +196,8 @@
   const minFret=$("minFret"), maxFret=$("maxFret"),
         naturalOnly=$("naturalOnly"), adaptive=$("adaptive"), feedback=$("feedback"),
         nextBtn=$("nextBtn"), revealBtn=$("revealBtn"), noteChoices=$("noteChoices"),
-        findChoices=$("findChoices");
+        findChoices=$("findChoices"), settingsToggle=$("settingsToggle"),
+        settingsBody=$("settingsBody"), settingsSummary=$("settingsSummary");
 
   for(let i=0;i<=12;i++){
     minFret.add(new Option(i,i)); maxFret.add(new Option(i,i));
@@ -199,6 +220,32 @@
       b.tabIndex=hide ? -1 : 0;
     });
   }
+
+  function updateSettingsSummary(){
+    const selected=[...document.querySelectorAll(".stringCheck:checked")].map(x=>+x.dataset.string);
+    let stringText;
+    if(selected.length===6){
+      stringText="All strings";
+    }else if(selected.length===1){
+      const short=["Low E","A","D","G","B","High E"];
+      stringText=short[selected[0]];
+    }else{
+      stringText=selected.length+" strings";
+    }
+
+    let lo=+minFret.value, hi=+maxFret.value;
+    if(lo>hi){const t=lo;lo=hi;hi=t;}
+
+    const noteText=naturalOnly.checked ? "Naturals" : "All notes";
+    const adaptiveText=adaptive.checked ? "Adaptive" : "Standard";
+    settingsSummary.textContent=`${stringText} · Frets ${lo}–${hi} · ${noteText} · ${adaptiveText}`;
+  }
+
+  settingsToggle.addEventListener("click",()=>{
+    const expanded=settingsToggle.getAttribute("aria-expanded")==="true";
+    settingsToggle.setAttribute("aria-expanded",String(!expanded));
+    settingsBody.classList.toggle("hidden",expanded);
+  });
 
   function load(){
     try{
@@ -405,13 +452,18 @@
     document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b===btn));
     newQuestion();
   }));
-  [minFret,maxFret,adaptive].forEach(el=>el.addEventListener("change",newQuestion));
+  [minFret,maxFret,adaptive].forEach(el=>el.addEventListener("change",()=>{
+    updateSettingsSummary();
+    newQuestion();
+  }));
   naturalOnly.addEventListener("change",()=>{
     updateNoteChoiceVisibility();
+    updateSettingsSummary();
     newQuestion();
   });
   document.querySelectorAll(".stringCheck").forEach(el=>el.addEventListener("change",()=>{
     if(!document.querySelector(".stringCheck:checked")) el.checked=true;
+    updateSettingsSummary();
     newQuestion();
   }));
   nextBtn.addEventListener("click",newQuestion);
@@ -424,7 +476,7 @@
     }
   });
 
-  updateStats(); updateNoteChoiceVisibility(); newQuestion();
+  updateStats(); updateNoteChoiceVisibility(); updateSettingsSummary(); newQuestion();
 })();
 </script>
 </body>
