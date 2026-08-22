@@ -40,14 +40,15 @@
     .panel{padding:13px;margin-bottom:12px}
     .settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .settings-toggle{
-      width:100%;min-height:44px;padding:0;border:0;background:transparent;color:var(--text);
-      display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
+      width:100%;min-height:40px;padding:0;border:0;background:transparent;color:var(--text);
+      display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;
       border-radius:0;
     }
     .settings-toggle:active{transform:none}
-    .settings-title{font-size:16px;font-weight:650}
-    .settings-summary{font-size:12px;color:var(--muted);margin-top:3px;font-weight:400}
-    .settings-chevron{font-size:18px;color:var(--muted);transition:transform .18s ease}
+    .settings-line{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap}
+    .settings-title{font-size:13px;font-weight:650;flex:0 0 auto}
+    .settings-summary{font-size:13px;color:var(--muted);font-weight:400;overflow:hidden;text-overflow:ellipsis}
+    .settings-chevron{font-size:16px;color:var(--muted);transition:transform .18s ease;flex:0 0 auto}
     .settings-toggle[aria-expanded="true"] .settings-chevron{transform:rotate(180deg)}
     .settings-body{padding-top:10px}
     label{font-size:12px;color:var(--muted);display:block}
@@ -112,9 +113,9 @@
 
   <div class="panel">
     <button id="settingsToggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="settingsBody">
-      <span>
-        <span class="settings-title">Practice Settings</span>
-        <span id="settingsSummary" class="settings-summary">All strings · Frets 0–5 · Naturals · Adaptive</span>
+      <span class="settings-line">
+        <span class="settings-title">Settings</span>
+        <span id="settingsSummary" class="settings-summary">· All strings · 0–5 · Naturals</span>
       </span>
       <span class="settings-chevron" aria-hidden="true">⌄</span>
     </button>
@@ -237,8 +238,7 @@
     if(lo>hi){const t=lo;lo=hi;hi=t;}
 
     const noteText=naturalOnly.checked ? "Naturals" : "All notes";
-    const adaptiveText=adaptive.checked ? "Adaptive" : "Standard";
-    settingsSummary.textContent=`${stringText} · Frets ${lo}–${hi} · ${noteText} · ${adaptiveText}`;
+    settingsSummary.textContent=`· ${stringText} · ${lo}–${hi} · ${noteText}`;
   }
 
   settingsToggle.addEventListener("click",()=>{
